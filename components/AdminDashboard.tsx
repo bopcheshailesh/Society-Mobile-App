@@ -35,9 +35,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const pendingLoans = requests.filter(r => r.status === TransactionStatus.PENDING);
   const pendingPayments = transactions.filter(t => t.status === TransactionStatus.PENDING);
   
-  // Comprehensive history including both rejected and approved items
-  // We attach type information to history items for better display labels
-  // Fixed: Added useMemo to React imports to resolve 'Cannot find name useMemo'
   const historyEntries = useMemo(() => {
     const combined = [
       ...transactions.map(t => ({ ...t, historyType: 'PAYMENT' })),
@@ -52,6 +49,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setLogs(Logger.getRecentLogs());
   }, [activeTab]);
 
+  // Helper to resolve the latest name from the member list
+  const resolveCurrentName = (userId: string, fallbackName: string) => {
+    const member = members.find(m => m.id === userId);
+    return member ? member.name : fallbackName;
+  };
+
   const getStatusLabel = (item: any) => {
     if (item.status === TransactionStatus.REJECTED) return 'REJECTED';
     if (item.status === TransactionStatus.APPROVED) {
@@ -62,7 +65,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      {/* Navigation Tabs */}
       <div className="flex bg-slate-200/50 p-1 rounded-2xl sticky top-2 z-30 backdrop-blur-md overflow-x-auto no-scrollbar border border-white/50 shadow-lg">
         {['payments', 'requests', 'members', 'history', 'health'].map((tab) => (
           <button 
@@ -85,7 +87,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div key={tx.id} className="bg-white rounded-[28px] shadow-sm border border-slate-100 p-5">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h5 className="font-black text-slate-800 leading-tight">{tx.userName}</h5>
+                      <h5 className="font-black text-slate-800 leading-tight">
+                        {resolveCurrentName(tx.userId, tx.userName)}
+                      </h5>
                       <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{tx.month} {tx.year}</p>
                     </div>
                     <div className="text-right">
@@ -112,19 +116,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                    <div key={req.id} className="bg-white rounded-[28px] shadow-sm border border-slate-100 p-6">
                       <div className="flex justify-between items-start mb-6">
                         <div>
-                          <h5 className="font-black text-slate-800 text-sm tracking-tight">{req.userName}</h5>
+                          <h5 className="font-black text-slate-800 text-sm tracking-tight">
+                            {resolveCurrentName(req.userId, req.userName)}
+                          </h5>
                           <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1">Loan Claim • {req.requestedDate}</p>
                         </div>
                         <div className="text-xl font-black text-blue-600">{formatCurrency(req.amount)}</div>
                       </div>
-                      
-                      {isPoolInsufficient && (
-                        <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 text-[9px] font-black uppercase text-center leading-relaxed">
-                          ⚠️ INSUFFICIENT POOL BALANCE<br/>
-                          Available: {formatCurrency(stats.availableBalance)}
-                        </div>
-                      )}
-
                       <div className="flex space-x-3">
                         <button onClick={() => onRejectLoan(req.id)} className="flex-1 bg-white border border-slate-200 text-slate-400 text-[9px] font-black uppercase py-4 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-colors">Dismiss</button>
                         <button 
@@ -156,11 +154,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                        <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 mr-3">{m.name.charAt(0)}</div>
                        <div>
                          <div className="font-black text-slate-800 text-sm">{m.name}</div>
-                         <div className="text-[9px] text-slate-400 font-black uppercase">Joined: {m.joinedDate}</div>
+                         <div className="text-[9px] text-slate-400 font-black uppercase tracking-tight">Growth Contribution: {formatCurrency(m.totalInterestPaid)}</div>
                        </div>
                     </div>
                     <div className="text-right">
-                       <div className="text-[10px] font-black text-indigo-600">{formatCurrency(m.totalContribution)}</div>
+                       <div className="text-[10px] font-black text-green-600">{formatCurrency(m.totalContribution)}</div>
                        <div className={`text-[9px] font-black uppercase ${m.currentLoanBalance > 0 ? 'text-red-500' : 'text-slate-300'}`}>Loan: {formatCurrency(m.currentLoanBalance)}</div>
                     </div>
                   </div>
@@ -178,7 +176,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 historyEntries.map((item: any) => (
                   <div key={item.id} className="bg-white p-5 rounded-[28px] border border-slate-100 flex justify-between items-center">
                     <div>
-                      <div className="font-black text-slate-800 text-xs">{item.userName}</div>
+                      <div className="font-black text-slate-800 text-xs">
+                        {resolveCurrentName(item.userId, item.userName)}
+                      </div>
                       <div className="text-[8px] font-black uppercase text-slate-400">{item.month || 'Disbursement'} {item.year || ''} • {item.date || item.requestedDate}</div>
                     </div>
                     <div className="text-right">

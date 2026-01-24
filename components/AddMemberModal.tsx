@@ -12,6 +12,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAdd }) => {
   const [mobile, setMobile] = useState('');
   const [initialSavings, setInitialSavings] = useState('0');
   const [initialLoan, setInitialLoan] = useState('0');
+  const [initialInterest, setInitialInterest] = useState('0'); // Track migration interest
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +25,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAdd }) => {
       role: Role.MEMBER,
       totalContribution: parseFloat(initialSavings) || 0,
       currentLoanBalance: parseFloat(initialLoan) || 0,
+      totalInterestPaid: parseFloat(initialInterest) || 0, // Migration support
       joinedDate: new Date().toISOString().split('T')[0]
     };
 
@@ -95,6 +97,19 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAdd }) => {
                   className="w-full pl-8 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 text-xs font-black text-slate-800"
                 />
               </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Past Interest Paid (Migration)</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">₹</span>
+              <input 
+                type="number" 
+                value={initialInterest}
+                onChange={(e) => setInitialInterest(e.target.value)}
+                className="w-full pl-8 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 text-xs font-black text-slate-800"
+              />
             </div>
           </div>
 

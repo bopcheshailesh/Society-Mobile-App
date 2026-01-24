@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 import { User, SocietyStats, LoanRequest, Transaction, TransactionStatus, Role } from './types';
 import { MONTHLY_CONTRIBUTION } from './logic';
@@ -17,6 +16,7 @@ export const INITIAL_SEED_DATA = {
     role: Role.ADMIN, 
     total_contribution: 0, 
     current_loan_balance: 0, 
+    total_interest_paid: 0,
     joined_date: new Date().toISOString().split('T')[0] 
   },
   testMember: {
@@ -26,6 +26,7 @@ export const INITIAL_SEED_DATA = {
     role: Role.MEMBER,
     total_contribution: 5000,
     current_loan_balance: 0,
+    total_interest_paid: 0,
     joined_date: new Date().toISOString().split('T')[0]
   },
   stats: {
@@ -90,11 +91,11 @@ export const SocietyService = {
     return (data || []).map(m => ({
       id: String(m.id),
       name: String(m.name),
-      // CRITICAL: Cast to string to ensure strict equality comparison in Login.tsx works
       mobileNumber: String(m.mobile_number || ''),
       role: m.role as Role,
       totalContribution: Number(m.total_contribution) || 0,
       currentLoanBalance: Number(m.current_loan_balance) || 0,
+      totalInterestPaid: Number(m.total_interest_paid) || 0,
       joinedDate: String(m.joined_date || '')
     }));
   },
@@ -117,6 +118,7 @@ export const SocietyService = {
       role: user.role,
       total_contribution: user.totalContribution,
       current_loan_balance: user.currentLoanBalance,
+      total_interest_paid: user.totalInterestPaid || 0,
       joined_date: user.joinedDate
     };
     const { error } = await supabase!.from('members').insert([payload]);
@@ -211,11 +213,13 @@ export const SocietyService = {
     await Promise.all([
       supabase!.from('stats').update(statsPayload).eq('id', 'global'),
       ...members.map(m => {
+        // Fix: Use correct camelCase property names from the User interface
         const memberPayload = { 
           name: m.name, 
           role: m.role, 
           total_contribution: m.totalContribution, 
-          current_loan_balance: m.currentLoanBalance 
+          current_loan_balance: m.currentLoanBalance,
+          total_interest_paid: m.totalInterestPaid
         };
         return supabase!.from('members').update(memberPayload).eq('id', m.id);
       })

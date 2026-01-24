@@ -17,6 +17,7 @@ export interface User {
   role: Role;
   totalContribution: number;
   currentLoanBalance: number;
+  totalInterestPaid: number; // Cumulative interest paid to society
   joinedDate: string;
 }
 

@@ -105,6 +105,16 @@ const MemberDashboard: React.FC<MemberDashboardProps> = ({
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 flex flex-col justify-between min-h-[140px]"><span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Outstand Loan</span><div className="text-3xl font-black text-slate-900 tracking-tighter">{formatCurrency(user.currentLoanBalance)}</div><div className="text-[8px] text-red-500 font-black bg-red-50 px-2.5 py-1 rounded-xl w-fit uppercase tracking-widest mt-2 border border-red-100/50">1% Rate Active</div></div>
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 flex flex-col justify-between min-h-[140px]"><span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Trust Savings</span><div className="text-3xl font-black text-slate-900 tracking-tighter">{formatCurrency(user.totalContribution)}</div><div className="text-[8px] text-green-500 font-black bg-green-50 px-2.5 py-1 rounded-xl w-fit uppercase tracking-widest mt-2 border border-green-100/50">Growth Fund</div></div>
           </div>
+          
+          <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[32px] shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Interest Contributed</span>
+              <p className="text-[8px] text-indigo-300 font-bold uppercase tracking-tight">Your impact on community pool</p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-black text-indigo-600 tracking-tighter">{formatCurrency(user.totalInterestPaid)}</div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4 px-1">
              <button onClick={() => setShowLoanModal(true)} className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col items-start space-y-3 hover:bg-slate-50 active:scale-95 transition-all"><div className="bg-blue-50 p-2.5 rounded-xl text-blue-600"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><span className="text-[10px] font-black uppercase tracking-widest text-slate-700">Apply for Loan</span></button>
@@ -131,7 +141,9 @@ const MemberDashboard: React.FC<MemberDashboardProps> = ({
                         {isLoan ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2" /></svg> : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>}
                       </div>
                       <div>
-                        <div className="text-sm font-black text-slate-800 leading-tight">{isLoan ? `Loan Request` : `${(item as Transaction).month} ${(item as Transaction).year}`}</div>
+                        <div className="text-sm font-black text-slate-800 leading-tight">
+                          {isLoan ? `Loan Request` : `${(item as Transaction).month} ${(item as Transaction).year}`}
+                        </div>
                         <div className={`text-[9px] font-black uppercase tracking-widest mt-1 ${statusColor}`}>{getStatusLabel(item)}</div>
                       </div>
                     </div>
@@ -158,27 +170,34 @@ const MemberDashboard: React.FC<MemberDashboardProps> = ({
             {members.map((m, idx) => (
               <div 
                 key={m.id} 
-                className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between animate-in slide-in-from-right-4 duration-500"
+                className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex flex-col animate-in slide-in-from-right-4 duration-500"
                 style={{ animationDelay: `${idx * 40}ms` }}
               >
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black text-indigo-600 mr-4">
-                    {m.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="text-sm font-black text-slate-800 leading-none">
-                      {m.name} {m.id === user.id && <span className="text-[8px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-lg ml-1">YOU</span>}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black text-indigo-600 mr-4">
+                      {m.name.charAt(0)}
                     </div>
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-2">
-                      ID: {m.id.split('_').pop()}
+                    <div>
+                      <div className="text-sm font-black text-slate-800 leading-none">
+                        {m.name} {m.id === user.id && <span className="text-[8px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-lg ml-1">YOU</span>}
+                      </div>
+                      <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-2">
+                        Trustee Member
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] font-black text-green-600 leading-tight">{formatCurrency(m.totalContribution)}</div>
+                    <div className={`text-[8px] font-black uppercase tracking-widest mt-1 ${m.currentLoanBalance > 0 ? 'text-red-500' : 'text-slate-300'}`}>
+                      Debt: {formatCurrency(m.currentLoanBalance)}
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[10px] font-black text-green-600 leading-tight">{formatCurrency(m.totalContribution)}</div>
-                  <div className={`text-[8px] font-black uppercase tracking-widest mt-1 ${m.currentLoanBalance > 0 ? 'text-red-500' : 'text-slate-300'}`}>
-                    Debt: {formatCurrency(m.currentLoanBalance)}
-                  </div>
+                
+                <div className="bg-slate-50/50 rounded-xl p-3 flex justify-between items-center border border-slate-50">
+                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Growth Contribution (Interest)</span>
+                   <span className="text-[10px] font-black text-indigo-500">{formatCurrency(m.totalInterestPaid)}</span>
                 </div>
               </div>
             ))}

@@ -83,7 +83,6 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ user, onClose, onLogout
             ) : (
               <>
                 <h2 className="text-2xl font-black text-slate-900 leading-tight">{user.name}</h2>
-                <p className="text-xs font-bold text-slate-400 mt-1">ID: {user.id.toUpperCase()}</p>
                 <div className="mt-3 flex justify-center">
                   <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${user.role === Role.ADMIN ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'}`}>
                     {user.role} Trustee
@@ -100,6 +99,10 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ user, onClose, onLogout
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-500">Tenure</span>
                   <span className="text-xs font-black text-slate-900">Joined {user.joinedDate}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-500">Growth Share</span>
+                  <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">{formatCurrency(user.totalInterestPaid)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-500">Security</span>

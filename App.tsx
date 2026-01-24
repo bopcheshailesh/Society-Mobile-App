@@ -213,7 +213,8 @@ const App: React.FC = () => {
           m.id === tx.userId ? { 
             ...m, 
             currentLoanBalance: Math.max(0, m.currentLoanBalance - tx.principalRepayment), 
-            totalContribution: m.totalContribution + tx.contribution 
+            totalContribution: m.totalContribution + tx.contribution,
+            totalInterestPaid: m.totalInterestPaid + tx.interestPaid // TRACK TOTAL INTEREST PAID
           } : m
         );
         await SocietyService.updateGlobalState(newStats, updatedMembers);
