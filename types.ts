@@ -13,6 +13,7 @@ export enum TransactionStatus {
 export interface User {
   id: string;
   name: string;
+  mobileNumber: string;
   role: Role;
   totalContribution: number;
   currentLoanBalance: number;

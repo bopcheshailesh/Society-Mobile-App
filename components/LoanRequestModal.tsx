@@ -35,6 +35,7 @@ const LoanRequestModal: React.FC<LoanRequestModalProps> = ({ onClose, onSubmit, 
               <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xl">₹</span>
               <input 
                 type="number"
+                inputMode="decimal"
                 autoFocus
                 value={amount || ''}
                 onChange={(e) => setAmount(Number(e.target.value))}

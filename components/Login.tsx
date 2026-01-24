@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
 import { SocietyService } from '../db';
 
@@ -8,51 +8,48 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [mobile, setMobile] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showSql, setShowSql] = useState(false);
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanMobile = mobile.trim();
+    if (cleanMobile.length < 10) {
+      setError("Please enter a valid 10-digit number.");
+      return;
+    }
 
-  const fetchProfiles = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await SocietyService.getMembers();
-      setMembers(data);
+      const members = await SocietyService.getMembers();
+      // Ensure strict string comparison on normalized inputs
+      const user = members.find(m => String(m.mobileNumber).trim() === cleanMobile);
+      
+      if (user) {
+        setTimeout(() => onLogin(user), 800);
+      } else {
+        setError("Mobile number not registered.");
+        setLoading(false);
+      }
     } catch (e) {
-      console.error("Failed to load profiles", e);
-    } finally {
+      setError("Database error. Please check your Supabase connection.");
       setLoading(false);
     }
   };
 
   const SQL_FIX = `
--- COPY AND RUN THIS ENTIRE SCRIPT IN SUPABASE SQL EDITOR
--- 1. Create Tables
-CREATE TABLE IF NOT EXISTS stats (id TEXT PRIMARY KEY DEFAULT 'global', total_members INTEGER, total_fund NUMERIC, total_loaned NUMERIC, available_balance NUMERIC, monthly_contribution_amount NUMERIC, interest_rate NUMERIC);
-CREATE TABLE IF NOT EXISTS members (id TEXT PRIMARY KEY, name TEXT, role TEXT, total_contribution NUMERIC DEFAULT 0, current_loan_balance NUMERIC DEFAULT 0, joined_date DATE);
-CREATE TABLE IF NOT EXISTS transactions (id TEXT PRIMARY KEY, user_id TEXT, user_name TEXT, month TEXT, year INTEGER, contribution NUMERIC, principal_repayment NUMERIC, interest_paid NUMERIC, total_paid NUMERIC, status TEXT, date DATE);
-CREATE TABLE IF NOT EXISTS loan_requests (id TEXT PRIMARY KEY, user_id TEXT, user_name TEXT, amount NUMERIC, status TEXT, requested_date DATE);
+-- 1. ENABLE MOBILE LOGIN
+ALTER TABLE members ADD COLUMN IF NOT EXISTS mobile_number TEXT UNIQUE;
 
--- 2. Enable RLS
-ALTER TABLE stats ENABLE ROW LEVEL SECURITY;
-ALTER TABLE members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE loan_requests ENABLE ROW LEVEL SECURITY;
-
--- 3. Drop existing to avoid conflicts
-DROP POLICY IF EXISTS "Allow All" ON stats;
-DROP POLICY IF EXISTS "Allow All" ON members;
-DROP POLICY IF EXISTS "Allow All" ON transactions;
-DROP POLICY IF EXISTS "Allow All" ON loan_requests;
-
--- 4. Create "Allow All" (Fixes INSERT/UPDATE errors)
-CREATE POLICY "Allow All" ON stats FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow All" ON members FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow All" ON transactions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow All" ON loan_requests FOR ALL USING (true) WITH CHECK (true);
+-- 2. SEED TEST USERS
+INSERT INTO members (id, name, mobile_number, role, total_contribution, current_loan_balance, joined_date)
+VALUES 
+('admin_1', 'Society Admin', '9999999999', 'ADMIN', 0, 0, CURRENT_DATE),
+('test_m_1', 'Test Member', '8888888888', 'MEMBER', 5000, 0, CURRENT_DATE)
+ON CONFLICT (id) DO UPDATE SET mobile_number = EXCLUDED.mobile_number;
   `.trim();
 
   return (
@@ -65,78 +62,69 @@ CREATE POLICY "Allow All" ON loan_requests FOR ALL USING (true) WITH CHECK (true
             </svg>
           </div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">SocietyPay</h2>
-          <p className="text-slate-400 text-sm font-medium mt-1">Select your secure profile</p>
+          <p className="text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest text-[10px] font-black">Authorized Personnel Only</p>
         </div>
 
-        <div className="space-y-4 max-h-[350px] overflow-y-auto no-scrollbar pr-1">
-          {loading ? (
-            <div className="py-10 text-center space-y-3">
-              <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Loading Ledger...</p>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Registered Mobile</label>
+            <div className="relative">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 font-black">+91</span>
+              <input 
+                type="tel" 
+                maxLength={10}
+                required
+                value={mobile}
+                onChange={(e) => {
+                  setMobile(e.target.value.replace(/\D/g, ''));
+                  setError(null);
+                }}
+                placeholder="0000000000"
+                className="w-full pl-14 pr-5 py-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-4 focus:ring-indigo-500/10 focus:bg-white focus:border-indigo-500 transition-all text-lg font-black tracking-[0.2em] text-slate-800 placeholder:text-slate-200"
+              />
             </div>
-          ) : members.length === 0 ? (
-            <div className="text-center py-4 space-y-6">
-              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
-                <p className="text-sm text-amber-800 font-bold">Permissions Blocked</p>
-                <p className="text-[10px] text-amber-600 mt-2 uppercase font-black leading-relaxed">The app cannot write to the database. You need to run a SQL fix in Supabase.</p>
-              </div>
-              
-              {!showSql ? (
-                <button 
-                  onClick={() => setShowSql(true)}
-                  className="w-full bg-slate-900 text-white text-[10px] font-black uppercase py-4 rounded-2xl tracking-widest"
-                >
-                  Get Fix-All SQL Script
-                </button>
-              ) : (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="bg-slate-50 p-3 rounded-xl text-left">
-                    <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Run this in Supabase SQL Editor:</p>
-                    <pre className="text-[8px] font-mono text-indigo-600 bg-white p-2 border border-slate-100 rounded-lg overflow-x-auto max-h-[150px]">{SQL_FIX}</pre>
-                  </div>
-                  <button 
-                    onClick={() => {navigator.clipboard.writeText(SQL_FIX); alert("SQL Copied!")}}
-                    className="w-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase py-2 rounded-xl"
-                  >
-                    Copy SQL
-                  </button>
-                  <button 
-                    onClick={() => window.location.reload()}
-                    className="w-full bg-indigo-600 text-white text-[10px] font-black uppercase py-4 rounded-2xl shadow-xl shadow-indigo-100"
-                  >
-                    I Ran the SQL, Retry
-                  </button>
-                </div>
-              )}
+            {error && <p className="text-red-500 text-[10px] font-black uppercase text-center mt-2 animate-in slide-in-from-top-1">{error}</p>}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || mobile.length < 10}
+            className="w-full bg-indigo-600 disabled:bg-slate-200 text-white font-black py-5 rounded-[24px] shadow-xl shadow-indigo-100 hover:shadow-indigo-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-3 group"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <span className="text-sm uppercase tracking-widest">Secure Sign In</span>
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-10 pt-8 border-t border-slate-50 text-center flex flex-col items-center">
+          <p className="text-[9px] text-slate-300 font-black uppercase tracking-[0.2em] mb-4">Bank-Grade Privacy</p>
+          <div className="space-y-2">
+            <p className="text-[8px] font-bold text-slate-400">Use your registered mobile number to access your account.</p>
+            <button 
+              onClick={() => setShowSql(!showSql)}
+              className="text-[8px] font-black text-slate-200 uppercase hover:text-slate-400 transition-colors"
+            >
+              {showSql ? "Hide System Config" : "System Config (SQL)"}
+            </button>
+          </div>
+          
+          {showSql && (
+            <div className="mt-4 bg-slate-50 p-4 rounded-2xl w-full text-left animate-in slide-in-from-top-4">
+               <pre className="text-[7px] font-mono text-indigo-400 overflow-x-auto whitespace-pre-wrap">{SQL_FIX}</pre>
+               <button 
+                onClick={() => {navigator.clipboard.writeText(SQL_FIX); alert("Copied!");}}
+                className="w-full mt-2 bg-white border border-slate-100 py-2 rounded-xl text-[8px] font-black uppercase text-slate-400"
+               >
+                 Copy SQL Script
+               </button>
             </div>
-          ) : (
-            members.map((user) => (
-              <button
-                key={user.id}
-                onClick={() => onLogin(user)}
-                className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-white hover:shadow-xl hover:scale-[1.02] border border-slate-100 rounded-3xl transition-all group active:scale-95"
-              >
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-lg mr-4 shadow-lg shadow-indigo-100 group-hover:rotate-6 transition-transform">
-                    {user.name[0]}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-slate-800 text-base leading-tight">{user.name}</div>
-                    <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{user.role}</div>
-                  </div>
-                </div>
-                <div className="bg-white p-2 rounded-xl border border-slate-100 text-slate-300 group-hover:text-indigo-600 group-hover:border-indigo-100 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </button>
-            ))
           )}
-        </div>
-        
-        <div className="mt-10 pt-8 border-t border-slate-50 text-center">
-          <p className="text-[9px] text-slate-300 font-black uppercase tracking-[0.2em]">Bank-Grade Transparency</p>
         </div>
       </div>
     </div>
